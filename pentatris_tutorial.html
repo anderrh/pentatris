@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pentatris - Upgrading Tetris to Pentominoes</title>
+<style>
+:root {
+    --bg: #1a1a2e;
+    --card-bg: #16213e;
+    --card-front: #0f3460;
+    --card-back: #1a1a2e;
+    --accent: #e94560;
+    --text: #eee;
+    --text-dim: #aaa;
+    --code-bg: #0d1117;
+    --green: #4ec9b0;
+    --blue: #569cd6;
+    --yellow: #dcdcaa;
+    --orange: #ce9178;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 2rem;
+    max-width: 960px;
+    margin: 0 auto;
+}
+h1 {
+    color: var(--accent);
+    font-size: 2.2rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 0.5rem;
+}
+h2 {
+    color: var(--green);
+    font-size: 1.6rem;
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+}
+h3 {
+    color: var(--blue);
+    font-size: 1.2rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+p { margin-bottom: 1rem; }
+a { color: var(--accent); }
+code {
+    background: var(--code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 3px;
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+}
+pre {
+    background: var(--code-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin: 1rem 0;
+    border: 1px solid #333;
+}
+pre code { background: none; padding: 0; }
+ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+li { margin-bottom: 0.3rem; }
+img.pentomino { image-rendering: pixelated; width: 80px; height: 80px; margin: 4px; }
+img.screenshot { max-width: 320px; image-rendering: pixelated; border: 2px solid #333; border-radius: 4px; }
+.gallery { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 1rem 0; }
+.subtitle { color: var(--text-dim); font-size: 1.1rem; margin-bottom: 2rem; }
+.section-card {
+    background: var(--card-bg);
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+}
+.reg-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+.reg-table th, .reg-table td {
+    border: 1px solid #333;
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+}
+.reg-table th {
+    background: var(--card-front);
+    color: var(--green);
+    font-weight: 600;
+}
+.reg-table td { background: var(--code-bg); }
+.note {
+    background: #2a2a1a;
+    border-left: 4px solid var(--yellow);
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 8px 8px 0;
+}
+.success {
+    background: #1a2a1a;
+    border-left: 4px solid var(--green);
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 8px 8px 0;
+}
+.diff-add {
+    background: #1a2e1a;
+    border-left: 3px solid #4ec9b0;
+    padding: 0.1rem 0.5rem;
+    margin: 0;
+}
+.diff-remove {
+    background: #2e1a1a;
+    border-left: 3px solid #e94560;
+    padding: 0.1rem 0.5rem;
+    margin: 0;
+}
+.test-box {
+    background: #1a2a1a;
+    border: 1px solid #2a4a2a;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+.test-box code { color: var(--green); }
+</style>
+</head>
+<body>
+
+<h1>Pentatris &mdash; Adding Pentominoes to Your Tetris</h1>
+<p class="subtitle">Tutorial 2: Extending 7 tetrominoes to 25 pieces (7 + 18 pentominoes)</p>
+
+<div class="note">
+<strong>Prerequisite:</strong> Complete Tutorial 1 (asm_tutorial.html) first. You should have a
+fully working Tetris game with all 33 tests passing on the <code>asm_port</code> branch.
+</div>
+
+<h2>What Are Pentominoes?</h2>
+
+<p>Pentominoes are shapes made of 5 connected squares, just as tetrominoes are made of 4.
+There are 18 one-sided pentominoes (counting mirror images as distinct). Combined with
+the 7 standard tetrominoes, your game will have 25 different pieces.</p>
+
+<p>Each pentomino fits in a 40&times;40 pixel frame (5&times;5 tiles) and has 4 rotation states,
+just like tetrominoes.</p>
+
+<div class="gallery">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEVxxul4KAAAAAD4eDD/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKjOQgqxAAAAlUlEQVR4nO2WwQrAIAxDpf7/P4+NycaGNKkeCs27eDCmGa5qazf2oU3w5lEd6vMs6Bc2Rk+H+q36vBac39NtjJ4O9Vv1UcBKAbM3SdZjhg0W1Yf92K2N6sN+bHNE9WE/BSwQMHuTeG0+0bH6VT/6fYYWjvr8heTVg27dtrrs5Y3+/NvqKmCBgNmbJPsxI4QQQgghSnIAHVwLkZT+1x0AAAAASUVORK5CYII=" alt="Pentomino 1" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKhxxun4+PgAAABg+GD/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKi6NgH+AAAAtUlEQVR4nO2USwrAIBBDXRS9/437AbGMaKKzGTDZuJiYvqIxZaOLFPKzeciXcvmU60oDAj+bh3wP4Mtfcl15wLmfzUM+AZ4AGL0k0Z8ZaxxtsHPWh8CQvwGCo7Zz1jcEJPN+gPOy2DnrGwNyeQI8CTB6SUDd2WcBzVfzOsBR4K4P/QjK6Y4YfnjRh67CAuD8Uu/6UJkEKMC2IXpJoj8zUSVArwTolQC9EqBXAvRKgF4J0KvwgDc3Em+RDNFAqgAAAABJRU5ErkJggg==" alt="Pentomino 2" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKhxxun4+PgAAAD4oAj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKhMcTlsAAAAlklEQVR4nO2UOwrAMAxDMxbn/vftZywGO1SQh2stXoLygiIPW9QRSO03bD6y7AwBxX4X4P2OadkZA2r9GvAPgPSSLCoEFPuN6MD74ux5lV8eMBmJ2m8BMPep1X4N+NWvEiC9JPg1gwfER8wvSQO6qgRILwl+zeAB8RHzS9KArioB0kuCXzN4QHzE/JI0oKtKgPSSbFozJ1DI05Ho2YzqAAAAAElFTkSuQmCC" alt="Pentomino 3" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKhxxun4+PgAAAD4APj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKjeXagcAAAAuklEQVR4nO2UXQ6AIAyDOYDB+9/WP3zQZG5jNSlhfSHGMj6DbalNi6KqSPJpc6Vz7udS11M6YPNJq+RzA7727YAHrwXw8kmr5PMDPvcl4AyA7CGhrxknYO9B0nvtg91XbAZU/NZfxh0SO+C33xq6BJwBkD0k9DXjPBgFaJX5ir1CzTWHxCvU3ASMzhkBkD0k9DUjFGRU8B5EXzW8B9Fhgac4ATs1AiB7SNhrBgHzpxIwqgSMKgGjogfcAGp+N6DOxZQ6AAAAAElFTkSuQmCC" alt="Pentomino 4" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKgpfq74+PgAAABxxun/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKi4wMpnAAAA0klEQVR4nO2XUQ6DMAxDfQS03f+u0ybKpI5gixolE30//WhxH2oTAZaVx8oSwOb7dWpeRFuH7YHnhziQzPfr1Lxo3BF8ex8FHs/369S8aJyCdxSsXiTl24wpUH0Rts+voOlI1KvA9tkR9FxqtZjYPlPwjoLVi6R8mxkMduc0sAUPHo07p4Fv8Njlduc04A6egqOBFwpWL5KqbSZquGfxC4qf6Cr2I1Z/clTsRTIFB/kHwepFUr3NuIKuAtkCDGQLMJAtwEC2AAPZAgxkCzCQLcB4AYQ0m6B8gig5AAAAAElFTkSuQmCC" alt="Pentomino 5" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj4oAgAAAD4+AD4AAD/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKihoRAjAAAAvUlEQVR4nO2UUQ6AMAhDOYTG+9/UqIsfGmyRLamR/uxjUN/cik1Nc9PkaHaE6lk/r87OhmWXb9j2ryuqZ/0IwO0cT4bH/nVF9axfARagfkhUxwxbGP0A64cObuyvvhmDPtYPPR1jH+vd+LmP9UPhK8A/AKqHRH7MBMGy4FFZ9GqR3j4ZTxYNB9Lb0HkqwKzfFwDVQyI/ZgYB9vIbdsW9/IaFpJdfAWb1BUD1kKiPmV5Go1SAWRVgVgWYlTzgCvaX/DAmYLcXAAAAAElFTkSuQmCC" alt="Pentomino 6" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKhxxukAAAAAAAD4+AD/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKjvIi2GAAAAwUlEQVR4nO2VXQ6AMAiDdwwX739PfxNNzVwZPNRIH3UtXxxgqacmoyoIn4/moL/UeZcd8PSh35qHOehfATfeEcDDh35rHuagPwH/AKg+JPJrpvHCGmQFZOuW1qd9BHauAs91Acm6pdWcz8D3ZsZzfUCubgL+AVB9SNTXjDU4qjCrC3Dwl4dir47VDZBr7p7Y5meVgN68LwGqD4n8mgkKjM4Lv+LovPAhic5LQG/OlwDVh0R9zagqAb1KQK8S0Ct5wAUQXGA/lTJGsgAAAABJRU5ErkJggg==" alt="Pentomino 7" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEVxxul4KAAAAAD4eDD/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKjOQgqxAAAAlElEQVR4nO2UywrAIAwEJf7/P/cBHipIR9xDIDsXL8O6tsYWE23B7FGf5q28Fv0lxko96p/ue4tP/x5jpR71T/d1wQoFsw9J+meGitCXHxh/aujLrwy+rNCXD50LFiiYfUjgs0B9mjd7S58Wo+we+D8Q/trdPFkuHY7dPFmuC6oCBd0+ecKC2Yck+zNjjDHGGGNKcwHAbguRWontawAAAABJRU5ErkJggg==" alt="Pentomino 8" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKhxxun4+PgAAABg+GD/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKi6NgH+AAAAsklEQVR4nO2WSwrAIAxEXRR7/xv3A8VWiDMmmxTnbdwk0wcabakdGwDVe3OsvlL3m/qsMBjUe3OsvlPw8t7rs+Lgcb03x+qT4AqC2Yck/TVDCrKB3jyrjt5idku8eQPB8SFtgd86NCSzeRJcWTD7kDivBavem2cK9g1WIQv7YZYmSD5RiNmnE/ESHB9WltmfD4QEo3l/Esw+JNmvmaxIMIoEo0gwigSjSDCKBKNIMEp6wQPaJG+RIrYzrwAAAABJRU5ErkJggg==" alt="Pentomino 9" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKhxxun4+PgAAAD4oAj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKhMcTlsAAAAqklEQVR4nO2WzQrAIAyDPQ59//cdGwxF55oRDwGTi4fW9pP+bClPdASK/Fj7o5TLrdyfIWDgx9obwOsdJfdnDPjtx9oNuBOg+pCor5m/AdGHrIpXAcGSoK2wKl4DiDU1Okyr4hlwJ0D1IZFfM0FAFABNjOaDSzwkmPijpYM/dfXCd1OPCd790eaHfxYMuBGg+pCorxlVGZCVAVkZkJUBWRmQlQFZGZCVPOAJUMjTkYUk8PAAAAAASUVORK5CYII=" alt="Pentomino 10" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKhxxun4+PgAAAD4APj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKjeXagcAAAAtklEQVR4nO2VXQqAMAyDdwCZ97+tPwi6araWCBZM3rqW+IlLLfXQdMjW9hz10RzrV+q86wQ0tT1HfTTH+q2AG/8VsK3tOeqjOdZPgH8AzB4SE3N2LdwXDOdXnsx6hsgIzXlfCAMGP8kQ0HllvP0SvdRjwHbOGyoB/hkwe0iyr5nRA62RF/QtPz+g89f0tl8AsB+iOKDPT4ACPA2zhyT7mvlKAmQlQFYCZCVAVgJkJUBWAmSVHnABDZ83oFSmUcIAAAAASUVORK5CYII=" alt="Pentomino 11" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKgpfq74+PgAAABxxun/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKi4wMpnAAAAxElEQVR4nO2WSwoDIRAF6wjB3P+uIcmQhcQ8W2Veh7E2wtCfAul2KAc3QWkwGtfKq79T7i90gSOuPkfjWnlfBJ/ePQXecfU5GtfK24JXFMw+JOnXzGSBVXltwckrWJW3bA/GBU+e4i34h4LZhyT9mulcrKsFe/sSfcLCgpNP4mdIen8C4oK/66m+W/AKgtmHJPuaiTY8G9wCCtwCCtwCCtwCCtwCCtwCCtwCCtwCCtwCCtwCCtwCCtwCCtwCCtwCCtwCigeENJug/DsRewAAAABJRU5ErkJggg==" alt="Pentomino 12" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj4oAgAAAD4+AD4AAD/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKihoRAjAAAAp0lEQVR4nO2VXQqAMAyDdwiH97+pqANlOJuSPQSWPLo2fmP9KbVpA1U7Zc8j3/57qfsl3KjFj/Ki88j3A/Dkzhjd8aO86DzyNeCKgOpNIj9mQMPsj2f5FvRJsk83y7egRZ0t/lm+BlwBUL1J1McMGoiCoXnoBR5AcIWlAcmV+AL8L9bs8o/y0CYy4EqA6k2iPmZUZUBWBmRlQFYGZGVAVgZkZUBW8oAH9pf8MKqljxYAAAAASUVORK5CYII=" alt="Pentomino 13" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKhxxukAAAAAAAD4+AD/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKjvIi2GAAAAi0lEQVR4nO2WUQrAIAxDewxl97/n2FAZiigE2jDzfvwJ4W3YbpYKuZAWeOesBa+XdaFz7iP4PMdOoW9OgicJsg8J65rJE2ZF3jmrr7g/h8KgnNVL2p9jYUxOgicIsg/J5rhH5fgXdQvSf+r4fxYk+HtB9iFhXzOsSBBFgigSRJEgigRRJIgiQRR6wRsQXGA/jQk32gAAAABJRU5ErkJggg==" alt="Pentomino 14" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEVxxul4KAAAAAD4eDD/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKjOQgqxAAAAtklEQVR4nO2UUQrAIAxDxd3/zmND0U1L2y1CwObHn/SRTdOUinJRMkryWzlZ0Thw3LIHFPxWTvVJ52Tgyu0JOPdbOdUnnRFwx4DsJWFdM+r+cQJRH9oM2q8VfNIc6ql0BuVxCj5pDlW2CLhTQPaSsK+Zr2CNg+I1sPNqNA6K14F9j1vjoHgDGMWJgH85CwKyl4R+zYADIjI9weArRmR6gbElQWRaAo6ALJwJmL0k7GsmFAqFNtUJHVwLkXfG0pwAAAAASUVORK5CYII=" alt="Pentomino 15" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKhxxun4+PgAAABg+GD/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKi6NgH+AAAAuklEQVR4nO2WOw6AMAxDO6By/xsjPhmNTVMkI/KWDo3Sh2gMrV8shE5A9WpftN/6esAbXXVoRfVq3xvB3V9pdNahFdWrfUvwz4LuQ2IfM+Sg0cbqPnvgxl4VPIDUq/vsyjR22fEB9/XqPhu6EvyDoPuQ2MfMQzFVfFZf+VOnMnplEPLPgsro0CFKMNvvC4LuQ2IfM5MFA9scDGxzMLCd4qAEs9jmYGCbg8G0mJkh8yYlmKUEs5RgFnvBDTcSb5EANCN5AAAAAElFTkSuQmCC" alt="Pentomino 16" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKhxxun4+PgAAAD4oAj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKhMcTlsAAAApklEQVR4nO2WSwrAIAxEXZZ4//v2A9KitQmdLAac2bgZng80tsW6bMHM+tm8YvWKtTUMnPSzeYfg6V2trXHgez+bJ8EVBNmHhP2Z8QqzjaN9lHcLOkfSH120j/Iegt+Xur/80T7Kk+BKguxDQv/MOEVvQ0/gL284Yu8TFhZM4g1D4v0ExAVzeBJcSZB9SNifGdZIEI0E0UgQjQTRSBCNBNFIEA294A5QyNORmAG7hwAAAABJRU5ErkJggg==" alt="Pentomino 17" class="pentomino"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAAAoCAMAAABO8gGqAAADAFBMVEX/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKhxxun4+PgAAAD4APj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKj/AKjeXagcAAAArklEQVR4nO2V0QqAIAxF9wGi//+3UWSUczi4gwbe+yLIPJ7QmZQ7dUgZYs1bieLJs6BdqX1UQGPeFAzivQTP72m1jxo4n7cFY3gU3Ekwe5Okf2YWC8YNvfUoTx2xCRyOzFuP8lST2MDvpffWozwK7iSYvUmyPjPeDb0C0TzxHpkCLn5hUTzxXnoNnNdH8yi4g2D2Jsn+zHgBf4WCaCiIhoJoKIiGgmgoiIaCaNILHmp+N6DWlzuSAAAAAElFTkSuQmCC" alt="Pentomino 18" class="pentomino">
+</div>
+
+<h2>Overview of Changes</h2>
+
+<p>The beauty of this upgrade is that <strong>no game logic code needs to change</strong>.
+The collision detection, row clearing, input handling, and rendering all work with
+any number of pieces and any number of tiles per piece. You only need to:</p>
+
+<ol>
+<li><strong>Regenerate graphics data</strong> &mdash; include pentomino PNGs in the build pipeline</li>
+<li><strong>Fix a sprite cleanup bug</strong> &mdash; pentominoes have 5 sprites in their preview, but tetrominoes only have 4</li>
+<li><strong>Add tests</strong> &mdash; verify pentominoes work with existing game logic</li>
+</ol>
+
+<h2>Step 1: Enable Pentomino Graphics</h2>
+
+<div class="section-card">
+<h3>1a. Add Pentomino PNG Files</h3>
+
+<p>You should already have 18 pentomino PNG files in your <code>Graphics/</code> directory,
+named <code>Pentomino1.png</code> through <code>Pentomino18.png</code>. Each is a 160&times;40
+sprite sheet (4 rotation states, each 40&times;40 pixels).</p>
+
+<h3>1b. Update the Makefile</h3>
+
+<p>The Makefile already has pentomino support gated behind the <code>PENTO</code> flag.
+Change the default from 0 to 1:</p>
+
+<p><strong>File:</strong> <code>Makefile</code></p>
+<pre><code class="diff-remove">PENTO ?= 0</code>
+<code class="diff-add">PENTO ?= 1</code></pre>
+
+<p>This single change tells the build system to:</p>
+<ul>
+<li>Include <code>Graphics/Pentomino*.png</code> in the sprite list</li>
+<li>Run <code>png2asset</code> on each pentomino PNG (40&times;40 frames instead of 32&times;32)</li>
+<li>Run <code>tools/png2asm.py</code> to regenerate all assembly include files</li>
+</ul>
+
+<h3>1c. Regenerate Graphics</h3>
+
+<pre><code>make clean
+make gfx</code></pre>
+
+<p>This regenerates four key files:</p>
+
+<table class="reg-table">
+<tr><th>File</th><th>What Changed</th></tr>
+<tr><td><code>gfx/sprite_defs.inc</code></td><td>Added 18 <code>PentominoN_TILE_COUNT</code> constants, <code>PIECE_COUNT</code> = 25, <code>TOTAL_SPRITE_TILES</code> includes all 25 pieces</td></tr>
+<tr><td><code>gfx/sprite_data.inc</code></td><td>Added pentomino tile bytes, metasprite definitions, extended pointer table to 100 entries (25&times;4), extended tile offset table to 25 entries</td></tr>
+<tr><td><code>gfx/setup_sprites.inc</code></td><td>Added <code>set_sprite_data</code> and <code>set_bkg_data</code> calls for each pentomino</td></tr>
+<tr><td><code>gfx/palette_data.inc</code></td><td>Unchanged &mdash; pentominoes reuse the same 8 CGB palettes</td></tr>
+</table>
+
+<div class="success">
+<strong>Key insight:</strong> Because the metasprite pointer table, tile offset table, and
+<code>PIECE_COUNT</code> are all auto-generated, every function that uses them
+(<code>_CanPieceBePlacedHere</code>, <code>_PickNewTetromino</code>, <code>_SetCurrentPieceInBackground</code>,
+<code>_SetupVRAM</code>, etc.) automatically works with pentominoes. No code changes needed!
+</div>
+</div>
+
+<h2>Step 2: Fix the Preview Sprite Cleanup</h2>
+
+<div class="section-card">
+<p>There is one subtle bug when mixing pentominoes and tetrominoes. The next-piece preview
+in <code>_UpdateGui</code> uses <code>move_metasprite</code> starting at sprite slot 16.
+A tetromino has 4 sprites (slots 16&ndash;19), but a pentomino has 5 (slots 16&ndash;20).</p>
+
+<p>When a pentomino preview is replaced by a tetromino preview, sprite slot 20 retains
+the old pentomino sprite, creating a visual ghost. The fix is to hide sprite 20 before
+drawing the new preview.</p>
+
+<p><strong>File:</strong> <code>asm/hud.asm</code>, inside <code>_UpdateGui</code></p>
+
+<p>Add this block <strong>after</strong> the <code>_DrawNumber</code> calls and <strong>before</strong>
+the <code>move_metasprite</code> preview code:</p>
+
+<pre><code>    ; Hide the 5th preview sprite slot (index 20) which is stale when a
+    ; pentomino preview (5 cells) is replaced by a tetromino (4 cells).
+    ; move_metasprite overwrites slots 16-19 (or 16-20), so only 20 needs clearing.
+    ld a, 20
+    ld b, 0
+    ld c, 0
+    call move_sprite</code></pre>
+
+<p>This moves sprite 20 to position (0, 0), which is offscreen (the Game Boy's OAM
+coordinate system places (0, 0) at 8 pixels left and 16 pixels above the visible area).</p>
+</div>
+
+<h2>Step 3: Build and Test</h2>
+
+<div class="section-card">
+<h3>Build the ROM</h3>
+<pre><code>make</code></pre>
+
+<h3>Run Tests</h3>
+<pre><code>make test</code></pre>
+
+<p>The existing tests plus the new pentomino-specific tests should all pass. The new tests verify:</p>
+
+<table class="reg-table">
+<tr><th>Test</th><th>What It Checks</th></tr>
+<tr><td><code>test_Tetrominos</code> test 7</td><td><code>CanPieceBePlacedHere</code> returns 1 for pentomino piece 7 on empty board</td></tr>
+<tr><td><code>test_Tetrominos</code> test 8</td><td><code>PIECE_COUNT</code> equals 25</td></tr>
+<tr><td><code>test_Board</code> test 9</td><td><code>SetCurrentPieceInBackground</code> writes 5 tiles for a pentomino</td></tr>
+</table>
+
+<div class="test-box">
+<strong>Expected result:</strong> All 36 tests pass (33 original + 3 new pentomino tests)
+</div>
+</div>
+
+<h2>Step 4: Add the Pentomino Tests (Optional)</h2>
+
+<div class="section-card">
+<p>If you want to add the pentomino-specific tests to your test files, here are the additions:</p>
+
+<h3>tests/test_Tetrominos.asm</h3>
+
+<p>Change the test count from 6 to 8, then add after test 5:</p>
+
+<pre><code>.test6:
+    ; === Test 6: CanPieceBePlacedHere returns 1 for pentomino on empty board ===
+    xor a
+    ld [_blankTile], a                  ; VRAM default is 0 = blank
+    ld b, 7                             ; piece = 7 (Pentomino1)
+    ld c, 0                             ; rotation = 0
+    ld d, 5                             ; column = 5
+    ld e, 4                             ; row = 4
+    call _CanPieceBePlacedHere
+
+    ; Should return 1 (can place)
+    cp 1
+    jr nz, .test6_fail
+
+    ld a, 1
+    ld [wTestResults + 6], a
+    jr .test7
+.test6_fail:
+    xor a
+    ld [wTestResults + 6], a
+
+.test7:
+    ; === Test 7: PIECE_COUNT is 25 (7 tetrominoes + 18 pentominoes) ===
+    ld a, PIECE_COUNT
+    cp 25
+    jr nz, .test7_fail
+
+    ld a, 1
+    ld [wTestResults + 7], a
+    jr .test_done
+.test7_fail:
+    xor a
+    ld [wTestResults + 7], a</code></pre>
+
+<h3>tests/test_Board.asm</h3>
+
+<p>Change the test count from 8 to 9, then add after test 7:</p>
+
+<pre><code>.test8:
+    ; === Test 8: SetCurrentPieceInBackground writes 5 tiles for pentomino ===
+    ld a, $FF
+    ld [_blankTile], a
+    xor a
+    ld [_blankTilePalette], a
+
+    ; Clear rows 2-4, columns 3-7 with blankTile
+    ld d, 2
+.clearForTest8_row:
+    ld e, 3
+.clearForTest8_col:
+    push de
+    ld b, e
+    ld c, d
+    ld d, $FF
+    call set_bkg_tile_xy
+    pop de
+    inc e
+    ld a, e
+    cp 8
+    jr c, .clearForTest8_col
+    inc d
+    ld a, d
+    cp 5
+    jr c, .clearForTest8_row
+
+    ; Set up pentomino piece
+    ld a, 7
+    ld [_currentTetromino], a           ; piece 7 = Pentomino1
+    xor a
+    ld [_currentTetrominoRotation], a
+    ld a, 5
+    ld [_currentX], a
+    ld a, 4
+    ld [_currentY], a
+
+    call _SetCurrentPieceInBackground
+
+    ; Check all 5 expected tile positions are non-blank
+    ld b, 5
+    ld c, 2
+    call get_bkg_tile_xy
+    ld b, a
+    ld a, [_blankTile]
+    cp b
+    jr z, .test8_fail
+
+    ld b, 6
+    ld c, 2
+    call get_bkg_tile_xy
+    ld b, a
+    ld a, [_blankTile]
+    cp b
+    jr z, .test8_fail
+
+    ld b, 4
+    ld c, 3
+    call get_bkg_tile_xy
+    ld b, a
+    ld a, [_blankTile]
+    cp b
+    jr z, .test8_fail
+
+    ld b, 5
+    ld c, 3
+    call get_bkg_tile_xy
+    ld b, a
+    ld a, [_blankTile]
+    cp b
+    jr z, .test8_fail
+
+    ld b, 5
+    ld c, 4
+    call get_bkg_tile_xy
+    ld b, a
+    ld a, [_blankTile]
+    cp b
+    jr z, .test8_fail
+
+    ld a, 1
+    ld [wTestResults + 8], a
+    jr .test_done
+.test8_fail:
+    xor a
+    ld [wTestResults + 8], a</code></pre>
+</div>
+
+<h2>How It All Works</h2>
+
+<div class="section-card">
+<p>The elegance of the data-driven design becomes clear here. Every game function
+operates on the same abstractions:</p>
+
+<ul>
+<li><strong>Metasprite tables</strong>: Each piece (tetromino or pentomino) is just an index into
+<code>_Tetrominos_metasprites</code>. The table grew from 28 to 100 entries, but the lookup
+code is identical.</li>
+
+<li><strong>Tile offsets</strong>: <code>_tileOffsets</code> grew from 8 to 26 entries. Each piece's
+base tile is still just <code>_tileOffsets[piece_index]</code>.</li>
+
+<li><strong>PIECE_COUNT</strong>: <code>_RandomNumber(0, PIECE_COUNT)</code> and
+<code>_PickNewTetromino</code> automatically distribute across all 25 pieces because
+<code>PIECE_COUNT</code> is defined in the auto-generated <code>sprite_defs.inc</code>.</li>
+
+<li><strong>Sentinel-based iteration</strong>: <code>_CanPieceBePlacedHere</code> and
+<code>_SetCurrentPieceInBackground</code> loop until the <code>$80</code> sentinel.
+They don't care if a piece has 4 tiles or 5 &mdash; they just keep reading until the end.</li>
+</ul>
+
+<p>The only code change was the sprite cleanup fix, which is a rendering quirk rather than
+a logic issue. This demonstrates the value of designing data-driven game engines:
+adding content requires zero logic changes.</p>
+</div>
+
+<h2>What's Next?</h2>
+
+<p>Some ideas for further enhancements:</p>
+<ul>
+<li>Adjust the fall speed curve for the increased difficulty</li>
+<li>Add a piece selection mode (tetris-only, pentatris, or mixed)</li>
+<li>Implement a hold/swap mechanic</li>
+<li>Add more wall-kick positions for the larger pentomino pieces</li>
+<li>Widen the board from 10 to 12 or 15 columns to accommodate pentominoes better</li>
+</ul>
+
+</body>
+</html>

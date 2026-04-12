@@ -1,0 +1,294 @@
+load("//:defs.bzl", "gb_includes", "gb_object", "gb_rom")
+
+# =============================================================================
+# Include directories
+# =============================================================================
+
+# Main include directory (inc/*.inc)
+gb_includes(
+    name = "inc",
+    srcs = glob(["inc/*.inc"]),
+)
+
+# Generated graphics includes (gfx/*.inc — sprite_defs, sprite_data, palette_data, setup_sprites)
+gb_includes(
+    name = "gfx_inc",
+    srcs = glob(["gfx/*.inc"]),
+)
+
+# Flat include path — for `INCLUDE "hUGE.inc"` in tetris_music.asm
+gb_includes(
+    name = "huge_inc",
+    srcs = glob(["lib/hUGEDriver/*.inc"]),
+)
+
+# Prefixed include path — for `include "include/hardware.inc"` inside hUGEDriver.asm
+gb_includes(
+    name = "huge_driver_inc",
+    srcs = glob(["lib/hUGEDriver/*.inc"]),
+    prefix = "include",
+)
+
+# =============================================================================
+# Assembly objects — game modules
+# =============================================================================
+
+gb_object(
+    name = "main",
+    src = "asm/main.asm",
+    includes = [":inc", ":gfx_inc"],
+)
+
+gb_object(
+    name = "runtime",
+    src = "asm/runtime.asm",
+    includes = [":inc"],
+)
+
+gb_object(
+    name = "header",
+    src = "asm/header.asm",
+    includes = [":inc"],
+)
+
+gb_object(
+    name = "common",
+    src = "asm/common.asm",
+    includes = [":inc", ":gfx_inc"],
+)
+
+gb_object(
+    name = "gameplay",
+    src = "asm/gameplay.asm",
+    includes = [":inc", ":gfx_inc"],
+)
+
+gb_object(
+    name = "Board",
+    src = "asm/Board.asm",
+    includes = [":inc", ":gfx_inc"],
+)
+
+gb_object(
+    name = "Tetrominos",
+    src = "asm/Tetrominos.asm",
+    includes = [":inc", ":gfx_inc"],
+)
+
+gb_object(
+    name = "UserInterface",
+    src = "asm/UserInterface.asm",
+    includes = [":inc", ":gfx_inc"],
+    data = [
+        "gfx/UserInterface.2bpp",
+        "gfx/UserInterface.tilemap",
+        "gfx/UserInterface.attrmap",
+        "gfx/TileAnimation.2bpp",
+    ],
+)
+
+gb_object(
+    name = "hud",
+    src = "asm/hud.asm",
+    includes = [":inc", ":gfx_inc"],
+    data = ["gfx/Numbers.2bpp"],
+)
+
+gb_object(
+    name = "tetris_music",
+    src = "asm/tetris_music.asm",
+    includes = [":inc", ":huge_inc"],
+)
+
+gb_object(
+    name = "hUGEDriver",
+    src = "source/asm/hUGEDriver.asm",
+    includes = [":inc", ":huge_driver_inc"],
+)
+
+# =============================================================================
+# Main game ROM
+# =============================================================================
+
+gb_rom(
+    name = "tetris_gb",
+    deps = [
+        ":main",
+        ":runtime",
+        ":header",
+        ":common",
+        ":gameplay",
+        ":Board",
+        ":Tetrominos",
+        ":UserInterface",
+        ":hud",
+        ":tetris_music",
+        ":hUGEDriver",
+    ],
+    title = "TETRIS",
+)
+
+# =============================================================================
+# Test objects
+# =============================================================================
+
+gb_object(
+    name = "test_common_obj",
+    src = "tests/test_common.asm",
+    includes = [":inc", ":gfx_inc"],
+)
+
+gb_object(
+    name = "test_runtime_obj",
+    src = "tests/test_runtime.asm",
+    includes = [":inc"],
+)
+
+gb_object(
+    name = "test_hud_obj",
+    src = "tests/test_hud.asm",
+    includes = [":inc", ":gfx_inc"],
+)
+
+gb_object(
+    name = "test_Tetrominos_obj",
+    src = "tests/test_Tetrominos.asm",
+    includes = [":inc", ":gfx_inc"],
+)
+
+gb_object(
+    name = "test_Board_obj",
+    src = "tests/test_Board.asm",
+    includes = [":inc", ":gfx_inc"],
+)
+
+gb_object(
+    name = "test_UserInterface_obj",
+    src = "tests/test_UserInterface.asm",
+    includes = [":inc", ":gfx_inc"],
+)
+
+gb_object(
+    name = "test_gameplay_obj",
+    src = "tests/test_gameplay.asm",
+    includes = [":inc", ":gfx_inc"],
+)
+
+# =============================================================================
+# Test ROMs
+# =============================================================================
+
+# Shared deps for all test ROMs: runtime + header + hUGEDriver
+# (tetris_music is NOT needed — tests don't call hUGE_init)
+_TEST_COMMON_DEPS = [
+    ":runtime",
+    ":header",
+    ":hUGEDriver",
+]
+
+gb_rom(
+    name = "test_common_gb",
+    deps = [":test_common_obj", ":common"] + _TEST_COMMON_DEPS,
+    title = "TEST",
+)
+
+# test_runtime: runtime IS the module under test (no separate module .o)
+gb_rom(
+    name = "test_runtime_gb",
+    deps = [":test_runtime_obj"] + _TEST_COMMON_DEPS,
+    title = "TEST",
+)
+
+# test_hud: hud needs common + Tetrominos (UpdateGui uses metasprites)
+gb_rom(
+    name = "test_hud_gb",
+    deps = [":test_hud_obj", ":hud", ":Tetrominos", ":common"] + _TEST_COMMON_DEPS,
+    title = "TEST",
+)
+
+# test_Tetrominos: needs common
+gb_rom(
+    name = "test_Tetrominos_gb",
+    deps = [":test_Tetrominos_obj", ":Tetrominos", ":common"] + _TEST_COMMON_DEPS,
+    title = "TEST",
+)
+
+# test_Board: needs hud + Tetrominos + UserInterface + common
+gb_rom(
+    name = "test_Board_gb",
+    deps = [":test_Board_obj", ":Board", ":hud", ":Tetrominos", ":UserInterface", ":common"] + _TEST_COMMON_DEPS,
+    title = "TEST",
+)
+
+# test_UserInterface: needs common
+gb_rom(
+    name = "test_UserInterface_gb",
+    deps = [":test_UserInterface_obj", ":UserInterface", ":common"] + _TEST_COMMON_DEPS,
+    title = "TEST",
+)
+
+# test_gameplay: needs all modules
+gb_rom(
+    name = "test_gameplay_gb",
+    deps = [":test_gameplay_obj", ":gameplay", ":Board", ":hud", ":Tetrominos", ":UserInterface", ":common"] + _TEST_COMMON_DEPS,
+    title = "TEST",
+)
+
+# =============================================================================
+# Tests (run via serverboy emulator)
+# =============================================================================
+
+_TEST_DATA = [
+    "tests/run_tests.js",
+    "//third_party/serverboy:serverboy",
+    "@nodejs//:node",
+]
+
+sh_test(
+    name = "test_common",
+    srcs = ["run_test.sh"],
+    args = ["$(location :test_common_gb)"],
+    data = [":test_common_gb"] + _TEST_DATA,
+)
+
+sh_test(
+    name = "test_runtime",
+    srcs = ["run_test.sh"],
+    args = ["$(location :test_runtime_gb)"],
+    data = [":test_runtime_gb"] + _TEST_DATA,
+)
+
+sh_test(
+    name = "test_hud",
+    srcs = ["run_test.sh"],
+    args = ["$(location :test_hud_gb)"],
+    data = [":test_hud_gb"] + _TEST_DATA,
+)
+
+sh_test(
+    name = "test_Tetrominos",
+    srcs = ["run_test.sh"],
+    args = ["$(location :test_Tetrominos_gb)"],
+    data = [":test_Tetrominos_gb"] + _TEST_DATA,
+)
+
+sh_test(
+    name = "test_Board",
+    srcs = ["run_test.sh"],
+    args = ["$(location :test_Board_gb)"],
+    data = [":test_Board_gb"] + _TEST_DATA,
+)
+
+sh_test(
+    name = "test_UserInterface",
+    srcs = ["run_test.sh"],
+    args = ["$(location :test_UserInterface_gb)"],
+    data = [":test_UserInterface_gb"] + _TEST_DATA,
+)
+
+sh_test(
+    name = "test_gameplay",
+    srcs = ["run_test.sh"],
+    args = ["$(location :test_gameplay_gb)"],
+    data = [":test_gameplay_gb"] + _TEST_DATA,
+)

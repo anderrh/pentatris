@@ -1,0 +1,9 @@
+module(
+    name = "tetris_gameboy",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "platforms", version = "0.0.10")
+
+toolchains = use_extension("//:extensions.bzl", "toolchains")
+use_repo(toolchains, "rgbds", "nodejs")
