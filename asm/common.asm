@@ -70,57 +70,13 @@ SECTION "CommonCode", ROM0
 ; ---------------------------------------------------------------------------
 ; Calling convention: B = min, C = max -> A = result
 _RandomNumber::
-    ; A = min + (DIV_REG % (max - min))
-    ; B = min, C = max
-    ld a, c
-    sub b                           ; A = max - min (range)
-    ld c, a                         ; C = range
-    ldh a, [rDIV]                   ; A = DIV register (pseudo-random)
-.mod:
-    ; A = A % C (unsigned modulo)
-    cp c
-    jr c, .modDone
-    sub c
-    jr .mod
-.modDone:
-    add b                           ; A = min + (DIV % range)
+    ; TODO: Implement RandomNumber
+    ; B = min, C = max -> A = result in [min, max)
+    xor a
     ret
 
-; ---------------------------------------------------------------------------
-; void ResetAllSprites(){
-;
-;     // Reset all sprites
-;     for (uint8_t i = 0; i < 40; i++){
-;         set_sprite_tile(i, 0);
-;         move_sprite(i,160,160);
-;     }
-; }
-; ---------------------------------------------------------------------------
-; Calling convention: no arguments, no return value
 _ResetAllSprites::
-    ; for i = 0 to 39: set_sprite_tile(i, 0); move_sprite(i, 160, 160);
-    ; Use stack to preserve loop counter since calls clobber DE
-    ld e, 0                         ; E = sprite index (0-39)
-.resetLoop:
-    push de                         ; save counter
-
-    ; set_sprite_tile(E, 0)
-    ld a, e
-    ld b, 0                         ; tile = 0
-    call set_sprite_tile
-
-    pop de
-    push de
-
-    ; move_sprite(E, 160, 160)
-    ld a, e
-    ld b, 160                       ; X = 160
-    ld c, 160                       ; Y = 160
-    call move_sprite
-
-    pop de
-    inc e
-    ld a, e
-    cp 40
-    jr c, .resetLoop
+    ; TODO: Implement ResetAllSprites
+    ; Reset all 40 sprites: set_sprite_tile(i,0); move_sprite(i,160,160)
     ret
+

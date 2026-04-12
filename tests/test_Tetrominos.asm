@@ -26,7 +26,7 @@ SECTION "TestMain", ROM0
 _main::
     xor a
     ld [wTestDone], a
-    ld a, 8
+    ld a, 6
     ld [wTestCount], a
 
     ; === Test 0: PickNewTetromino should set currentX to 5 ===
@@ -196,45 +196,10 @@ _main::
 
     ld a, 1
     ld [wTestResults + 5], a
-    jr .test6
+    jr .test_done
 .test5_fail:
     xor a
     ld [wTestResults + 5], a
-
-.test6:
-    ; === Test 6: CanPieceBePlacedHere returns 1 for pentomino on empty board ===
-    ; Piece 7 = first pentomino (Pentomino1). On an empty board, it should fit.
-    xor a
-    ld [_blankTile], a                  ; VRAM default is 0 = blank
-    ld b, 7                             ; piece = 7 (Pentomino1)
-    ld c, 0                             ; rotation = 0
-    ld d, 5                             ; column = 5
-    ld e, 4                             ; row = 4
-    call _CanPieceBePlacedHere
-
-    ; Should return 1 (can place)
-    cp 1
-    jr nz, .test6_fail
-
-    ld a, 1
-    ld [wTestResults + 6], a
-    jr .test7
-.test6_fail:
-    xor a
-    ld [wTestResults + 6], a
-
-.test7:
-    ; === Test 7: PIECE_COUNT is 25 (7 tetrominoes + 18 pentominoes) ===
-    ld a, PIECE_COUNT
-    cp 25
-    jr nz, .test7_fail
-
-    ld a, 1
-    ld [wTestResults + 7], a
-    jr .test_done
-.test7_fail:
-    xor a
-    ld [wTestResults + 7], a
 
 .test_done:
     ld a, $01

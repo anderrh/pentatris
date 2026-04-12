@@ -18,19 +18,9 @@ SECTION "RuntimeVBlank", ROM0
 ; Halts the CPU until the VBlank interrupt fires.
 ; The VBlank ISR in header.asm sets wVBlankFlag to 1.
 wait_vbl_done::
-    xor a
-    ld [wVBlankFlag], a
-.loop:
-    halt
-    nop                             ; halt bug workaround
-    ld a, [wVBlankFlag]
-    or a
-    jr z, .loop
+    ; TODO: Implement wait_vbl_done
+    ; Halt CPU until VBlank interrupt sets wVBlankFlag
     ret
-
-; =============================================================================
-; Joypad Input
-; =============================================================================
 
 SECTION "RuntimeJoypad", ROM0
 
@@ -122,28 +112,16 @@ _WinTileAddr:
 ; Sets one background tile at position (x,y).
 ; Clobbers: A, DE, HL
 set_bkg_tile_xy::
-    push de
-    call _BkgTileAddr
-    pop de
-    ; Wait for VRAM access
-    call _WaitVRAM
-    ld [hl], d
+    ; TODO: Implement set_bkg_tile_xy
+    ; B=x, C=y, D=tile -> write tile to background tilemap
     ret
 
-; uint8_t get_bkg_tile_xy(uint8_t x, uint8_t y)
-; B=x, C=y -> A=tile
-; Gets one background tile at position (x,y).
-; Clobbers: DE, HL
 get_bkg_tile_xy::
-    call _BkgTileAddr
-    call _WaitVRAM
-    ld a, [hl]
+    ; TODO: Implement get_bkg_tile_xy
+    ; B=x, C=y -> A=tile at that background position
+    xor a
     ret
 
-; void set_win_tile_xy(uint8_t x, uint8_t y, uint8_t tile)
-; B=x, C=y, D=tile
-; Sets one window tile at position (x,y).
-; Clobbers: A, DE, HL
 set_win_tile_xy::
     push de
     call _WinTileAddr
@@ -528,41 +506,15 @@ SECTION "RuntimeSprites", ROM0
 ; Moves a sprite in the shadow OAM buffer.
 ; Clobbers: DE, HL
 move_sprite::
-    ; Calculate shadow OAM address: wShadowOAM + id * 4
-    ld h, 0
-    ld l, a
-    add hl, hl
-    add hl, hl                      ; HL = id * 4
-    ld de, wShadowOAM
-    add hl, de                      ; HL = &wShadowOAM[id]
-    ld [hl], c                      ; Y position
-    inc hl
-    ld [hl], b                      ; X position
+    ; TODO: Implement move_sprite
+    ; A=sprite_id, B=x, C=y -> write Y and X to shadow OAM
     ret
 
-; void set_sprite_tile(uint8_t id, uint8_t tile)
-; A=sprite_id, B=tile
-; Sets the tile number for a sprite in shadow OAM.
-; Clobbers: DE, HL
 set_sprite_tile::
-    ld h, 0
-    ld l, a
-    add hl, hl
-    add hl, hl
-    ld de, wShadowOAM
-    add hl, de
-    inc hl                          ; skip Y
-    inc hl                          ; skip X
-    ld [hl], b                      ; tile ID
+    ; TODO: Implement set_sprite_tile
+    ; A=sprite_id, B=tile -> write tile to shadow OAM
     ret
 
-; uint8_t move_metasprite(const metasprite_t *metasprite, uint8_t base_tile,
-;                         uint8_t base_sprite, uint8_t x, uint8_t y)
-; HL=metasprite, A=base_tile, B=base_sprite, D=x, E=y
-; Draws a metasprite to shadow OAM. Each metasprite entry is {dy, dx, dtile, props}.
-; Terminated by dy == 128 ($80).
-; Returns: A = next free sprite index (base_sprite + entries used)
-; Clobbers: BC, DE, HL
 move_metasprite::
     ld [_metaBaseTile], a
     ld a, d
@@ -644,45 +596,10 @@ move_metasprite::
 ; Hides all sprites in a metasprite by moving them offscreen (Y=0, X=0).
 ; Clobbers: A, BC, DE, HL
 hide_metasprite::
-    ld [_metaSpriteIdx], a
-
-.loop:
-    ld a, [hl]
-    cp METASPRITE_END
-    jr z, .done
-
-    ; Skip this metasprite entry (4 bytes)
-    inc hl
-    inc hl
-    inc hl
-    inc hl
-
-    ; Move sprite offscreen
-    push hl
-    ld a, [_metaSpriteIdx]
-    ld h, 0
-    ld l, a
-    add hl, hl
-    add hl, hl
-    ld de, wShadowOAM
-    add hl, de
-    xor a
-    ld [hli], a                     ; Y = 0
-    ld [hl], a                      ; X = 0
-    pop hl
-
-    ; Increment sprite index
-    ld a, [_metaSpriteIdx]
-    inc a
-    ld [_metaSpriteIdx], a
-
-    jr .loop
-
-.done:
+    ; TODO: Implement hide_metasprite
+    ; HL=metasprite, A=base_sprite -> hide all sprites in metasprite
     ret
 
-; OAM DMA trigger - call this to copy shadow OAM to real OAM
-; Clobbers: A
 run_dma::
     jp hOAMDMA
 

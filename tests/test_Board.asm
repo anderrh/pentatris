@@ -30,7 +30,7 @@ SECTION "TestMain", ROM0
 _main::
     xor a
     ld [wTestDone], a
-    ld a, 9
+    ld a, 8
     ld [wTestCount], a
 
     ; --- Common setup ---
@@ -417,108 +417,10 @@ _main::
 
     ld a, 1
     ld [wTestResults + 7], a
-    jr .test8
+    jr .test_done
 .test7_fail:
     xor a
     ld [wTestResults + 7], a
-
-.test8:
-    ; === Test 8: SetCurrentPieceInBackground writes 5 tiles for pentomino ===
-    ; Pentomino1 (piece 7) rotation 0 has 5 cells. Place at (5,4) and count
-    ; how many cells in the 3x3 area become non-blank.
-    ; Pentomino1 rot0 metasprite offsets place tiles at BG positions:
-    ;   (5,2), (6,2), (4,3), (5,3), (5,4)
-    ;
-    ; Clear the area first
-    ld a, $FF
-    ld [_blankTile], a
-    xor a
-    ld [_blankTilePalette], a
-
-    ; Clear rows 2-4, columns 3-7 with blankTile
-    ld d, 2                             ; start row
-.clearForTest8_row:
-    ld e, 3                             ; start column
-.clearForTest8_col:
-    push de
-    ld b, e                             ; column
-    ld c, d                             ; row
-    ld d, $FF                           ; blankTile
-    call set_bkg_tile_xy
-    pop de
-    inc e
-    ld a, e
-    cp 8
-    jr c, .clearForTest8_col
-    inc d
-    ld a, d
-    cp 5
-    jr c, .clearForTest8_row
-
-    ; Set up pentomino piece
-    ld a, 7
-    ld [_currentTetromino], a           ; piece 7 = Pentomino1
-    xor a
-    ld [_currentTetrominoRotation], a   ; rotation 0
-    ld a, 5
-    ld [_currentX], a
-    ld a, 4
-    ld [_currentY], a
-
-    call _SetCurrentPieceInBackground
-
-    ; Check all 5 expected tile positions are non-blank.
-    ; Check (5, 2) is non-blank
-    ld b, 5
-    ld c, 2
-    call get_bkg_tile_xy
-    ld b, a
-    ld a, [_blankTile]
-    cp b
-    jr z, .test8_fail
-
-    ; Check (6, 2) is non-blank
-    ld b, 6
-    ld c, 2
-    call get_bkg_tile_xy
-    ld b, a
-    ld a, [_blankTile]
-    cp b
-    jr z, .test8_fail
-
-    ; Check (4, 3) is non-blank
-    ld b, 4
-    ld c, 3
-    call get_bkg_tile_xy
-    ld b, a
-    ld a, [_blankTile]
-    cp b
-    jr z, .test8_fail
-
-    ; Check (5, 3) is non-blank
-    ld b, 5
-    ld c, 3
-    call get_bkg_tile_xy
-    ld b, a
-    ld a, [_blankTile]
-    cp b
-    jr z, .test8_fail
-
-    ; Check (5, 4) is non-blank
-    ld b, 5
-    ld c, 4
-    call get_bkg_tile_xy
-    ld b, a
-    ld a, [_blankTile]
-    cp b
-    jr z, .test8_fail
-
-    ld a, 1
-    ld [wTestResults + 8], a
-    jr .test_done
-.test8_fail:
-    xor a
-    ld [wTestResults + 8], a
 
 .test_done:
     ld a, $01

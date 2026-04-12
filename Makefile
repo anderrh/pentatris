@@ -65,7 +65,7 @@ TEST_ROMS := $(patsubst $(TEST_DIR)/test_%.asm,$(DIST_DIR)/test_%.gb,$(TEST_SRCS
 # =============================================================================
 
 # Piece selection: PENTO=1 includes pentominoes
-PENTO ?= 1
+PENTO ?= 0
 ifeq ($(PENTO),1)
 SPRITE_PNGS := $(wildcard Graphics/Tetromino[1-7].png) $(wildcard Graphics/Pentomino*.png)
 else
