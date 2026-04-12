@@ -506,8 +506,37 @@ SECTION "RuntimeSprites", ROM0
 ; Moves a sprite in the shadow OAM buffer.
 ; Clobbers: DE, HL
 move_sprite::
-    ; TODO: Implement move_sprite
-    ; A=sprite_id, B=x, C=y -> write Y and X to shadow OAM
+    ; args: A = sprite index (0-39), B = x, C = y
+    ;
+    ; We need to find this sprite's slot in the shadow OAM buffer.
+    ; Each sprite takes 4 bytes, so sprite N starts at wShadowOAM + N*4.
+    ; The OAM layout for each sprite is: [Y] [X] [tile] [attributes]
+
+    ; TODO: Compute the address of this sprite's OAM entry.
+    ;   First, get the index into HL so we can do 16-bit math:
+    ;     "ld h, 0" and "ld l, a" puts A (sprite index) into HL.
+    ;   Multiply by 4: "add hl, hl" doubles HL (so twice = *4). 
+    ; we do this to get to the correct pos in shadow ram but not 
+    ;the corect offset(renember each sprite takes up 4 bytes: x,y,tile,attrubutes)
+    ;   we are at 0 + 4*aprite in index so we need to add to actully get to the section in memory with shadow oam:
+    ;     "ld de, wShadowOAM" then "add hl, de".
+    ;   Now HL is the pointer to this sprite's Y byte.
+    ;   (6 instructions)
+
+    ; TODO: Write Y and X positions into the OAM slot.
+    ;   (3 instructions)
+
+    ld h, 0
+    ld l, a
+    add hl, hl
+    add hl, hl
+    ld de, wShadowOAM
+    add hl, de
+    ld a, c
+    ld [hli], a
+    ld a, b
+    ld [hl], a
+
     ret
 
 set_sprite_tile::
