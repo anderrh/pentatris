@@ -1,4 +1,5 @@
 load("//:defs.bzl", "gb_includes", "gb_object", "gb_rom")
+load("@rules_shell//shell:sh_test.bzl", "sh_test")
 
 # =============================================================================
 # Include directories
