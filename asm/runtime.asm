@@ -542,6 +542,17 @@ move_sprite::
 set_sprite_tile::
     ; TODO: Implement set_sprite_tile
     ; A=sprite_id, B=tile -> write tile to shadow OAM
+
+    ld h, 0
+    ld l, a
+    add hl, hl
+    add hl, hl
+    ld de, wShadowOAM
+    add hl, de
+    inc hl
+    inc hl
+    ld a, b
+    ld [hl], a
     ret
 
 move_metasprite::
