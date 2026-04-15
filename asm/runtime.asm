@@ -114,12 +114,23 @@ _WinTileAddr:
 set_bkg_tile_xy::
     ; TODO: Implement set_bkg_tile_xy
     ; B=x, C=y, D=tile -> write tile to background tilemap
+    push de
+    call _BkgTileAddr
+    call _WaitVRAM
+    pop de
+    ld a, d
+    ld [hl], a
+
     ret
 
 get_bkg_tile_xy::
     ; TODO: Implement get_bkg_tile_xy
     ; B=x, C=y -> A=tile at that background position
-    xor a
+    call _BkgTileAddr
+    call _WaitVRAM
+    ld a, [hl]
+
+
     ret
 
 set_win_tile_xy::
