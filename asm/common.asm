@@ -72,11 +72,26 @@ SECTION "CommonCode", ROM0
 _RandomNumber::
     ; TODO: Implement RandomNumber
     ; B = min, C = max -> A = result in [min, max)
-    xor a
+    ld a, c
+    sub a, b
+    ld c, a
+    ; c is now range
+    ldh a, [rDIV]
+    ; random num in a
+.mod: 
+    sub a, c
+    jp nc, .mod
+    ;check(sub) and if able go back add
+.modend:
+    add a, c
+    add a, b
+    ; add offset
     ret
 
 _ResetAllSprites::
     ; TODO: Implement ResetAllSprites
     ; Reset all 40 sprites: set_sprite_tile(i,0); move_sprite(i,160,160)
+    ld e, 0
+.loop
     ret
 
